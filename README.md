@@ -34,7 +34,7 @@ A real-time solar power monitoring dashboard that integrates with SolarEdge API 
    VITE_SOLAREDGE_SITE_ID=your_site_id
    VITE_SUPABASE_URL=your_supabase_url
    VITE_SUPABASE_ANON_KEY=your_anon_key
-   VITE_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
    ```
 4. Start the development server:
    ```bash

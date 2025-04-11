@@ -2,19 +2,37 @@ import React, { useEffect, useState } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { getHistoricalData } from './lib/api';
 import type { SolarMeasurement } from './types/solar';
+import { subDays } from 'date-fns';
 
 function App() {
   const [currentData, setCurrentData] = useState<SolarMeasurement | null>(null);
   const [historicalData, setHistoricalData] = useState<SolarMeasurement[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 1));
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 24;
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const data = await getHistoricalData(24);
+        // First get the total count to calculate valid page range
+        const { count } = await getHistoricalData(startDate, endDate, 1, 1);
+        const maxPage = Math.max(1, Math.ceil(count / pageSize));
+        
+        // Adjust current page if it exceeds the maximum
+        const adjustedPage = Math.min(currentPage, maxPage);
+        if (adjustedPage !== currentPage) {
+          setCurrentPage(adjustedPage);
+          return; // The state update will trigger another useEffect run
+        }
+
+        const { data } = await getHistoricalData(startDate, endDate, adjustedPage, pageSize);
         if (data.length > 0) {
           setCurrentData(data[0]);
           setHistoricalData(data);
+          setTotalPages(maxPage);
         } else {
           setError('No solar data available - but access to database successfully');
         }
@@ -28,7 +46,7 @@ function App() {
     const interval = setInterval(fetchData, 300000); // Refresh every 5 minutes
 
     return () => clearInterval(interval);
-  }, []);
+  }, [startDate, endDate, currentPage]);
 
   if (error) {
     return (
@@ -49,7 +67,19 @@ function App() {
     );
   }
 
-  return <Dashboard currentData={currentData} historicalData={historicalData} />;
+  return (
+    <Dashboard 
+      currentData={currentData} 
+      historicalData={historicalData}
+      startDate={startDate}
+      endDate={endDate}
+      onStartDateChange={setStartDate}
+      onEndDateChange={setEndDate}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onPageChange={setCurrentPage}
+    />
+  );
 }
 
 export default App;
